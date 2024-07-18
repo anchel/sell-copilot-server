@@ -1,0 +1,3 @@
+[submodule "sell-copilot"]
+	path = sell-copilot
+	url = https://github.com/anchel/sell-copilot.git
