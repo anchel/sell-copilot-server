@@ -10,6 +10,7 @@ import (
 	"github.com/anchel/sell-copilot-server/routes"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -20,6 +21,20 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
+
+	store, err := redis.NewStore(3, "tcp", os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWORD"), []byte("secret"))
+	if err != nil {
+		log.Fatal("Error redis.NewStore")
+	}
+	r.Use(sessions.Sessions("mysession", store))
+	r.Use(func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("count", 1)
+		session.Save()
+		c.Next()
+	})
+
 	routes.InitRoutes(r)
 	r.Run(":8080")
 }
