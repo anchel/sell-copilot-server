@@ -12,10 +12,11 @@ import (
 )
 
 func init() {
-	routes.AddRouteInitFunc(func(r *gin.Engine) {
+	routes.AddRouteInitFunc(func(r *gin.RouterGroup) {
 		loginController := NewLoginController()
-		r.POST("/api/login", loginController.Login)
-		r.GET("/api/userinfo", loginController.GetUserInfo)
+		r.POST("/login", loginController.Login)
+		r.GET("/logout", loginController.Logout)
+		r.GET("/userinfo", loginController.GetUserInfo)
 	})
 }
 
@@ -31,17 +32,17 @@ type LoginController struct {
 
 func (c *LoginController) GetUserInfo(ctx *gin.Context) {
 	session := sessions.Default(ctx)
-	log.Println("/api/userinfo", session.ID(), session.Get("login"))
+	// log.Println("/api/userinfo", session.ID(), session.Get("login"))
 	login, ok := session.Get("login").(int)
 	if !ok || login != 1 {
-		log.Println("/api/userinfo", "no login")
+		// log.Println("/api/userinfo", "no login")
 		ctx.JSON(200, gin.H{
 			"code":    1,
 			"message": "no login",
 		})
 		return
 	}
-	log.Println("/api/userinfo", "has login")
+	// log.Println("/api/userinfo", "has login")
 	userStr := session.Get("user").(string)
 	var user database.User
 	err := json.Unmarshal([]byte(userStr), &user)
@@ -107,5 +108,23 @@ func (c *LoginController) Login(ctx *gin.Context) {
 		"code":    0,
 		"message": "ok",
 		"user":    user,
+	})
+}
+
+func (c *LoginController) Logout(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	session.Clear()
+
+	if err := session.Save(); err != nil {
+		ctx.JSON(200, gin.H{
+			"code":    1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"code":    0,
+		"message": "ok",
 	})
 }

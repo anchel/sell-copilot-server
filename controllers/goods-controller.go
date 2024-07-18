@@ -6,11 +6,11 @@ import (
 )
 
 func init() {
-	routes.AddRouteInitFunc(func(r *gin.Engine) {
+	routes.AddRouteInitFunc(func(r *gin.RouterGroup) {
 		goodsController := NewGoodsController()
-		r.GET("/api/goods/list", goodsController.List)
-		r.POST("/api/goods/add", goodsController.Add)
-		r.POST("/api/goods/del", goodsController.Del)
+		r.GET("/goods/list", goodsController.List)
+		r.POST("/goods/add", goodsController.Add)
+		r.POST("/goods/del", goodsController.Del)
 	})
 }
 

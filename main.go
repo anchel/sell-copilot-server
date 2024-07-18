@@ -15,6 +15,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/samber/lo"
 )
 
 //go:embed sell-copilot/dist
@@ -46,20 +47,31 @@ func main() {
 		log.Fatal("Error database.InitDB")
 	}
 
-	// r.Use(func(c *gin.Context) {
-	// 	session := sessions.Default(c)
-	// 	session.Set("count", 1)
-	// 	session.Save()
-	// 	c.Next()
-	// })
-
-	r.Use(func(c *gin.Context) {
-		log.Println("middleware 111")
+	exclude := []string{
+		"/api/login",
+		"/api/userinfo",
+	}
+	group := r.Group("/api", func(ctx *gin.Context) {
+		path := ctx.Request.URL.Path
+		if lo.Contains(exclude, path) { // exclude
+			log.Println("check login path exclude", path)
+			ctx.Next()
+		} else {
+			session := sessions.Default(ctx)
+			login, ok := session.Get("login").(int)
+			if !ok || login != 1 {
+				log.Println("check login false")
+				ctx.JSON(200, gin.H{
+					"code":    1,
+					"message": "no login",
+				})
+				ctx.Abort()
+			} else {
+				log.Println("check login success")
+				ctx.Next()
+			}
+		}
 	})
-	r.Use(func(c *gin.Context) {
-		log.Println("middleware 222")
-	})
-
-	routes.InitRoutes(r)
+	routes.InitRoutes(group)
 	r.Run(os.Getenv("LISTEN_ADDR"))
 }
