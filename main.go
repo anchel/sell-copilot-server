@@ -1,19 +1,24 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	_ "github.com/anchel/sell-copilot-server/controllers" // Import all controllers
+	"github.com/anchel/sell-copilot-server/database"
 	"github.com/anchel/sell-copilot-server/routes"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+//go:embed sell-copilot/dist
+var frontend embed.FS
 
 func main() {
 	err := godotenv.Load()
@@ -23,57 +28,38 @@ func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 
-	store, err := redis.NewStore(3, "tcp", os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWORD"), []byte("secret"))
+	store, err := redis.NewStore(3, "tcp", os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWORD"), []byte("secret666"))
 	if err != nil {
 		log.Fatal("Error redis.NewStore")
 	}
 	r.Use(sessions.Sessions("mysession", store))
+
+	r.Use(static.Serve("/", static.EmbedFolder(frontend, "sell-copilot/dist")))
+	// enable single page application
+	r.NoRoute(func(c *gin.Context) {
+		fmt.Println("NoRoute", c.Request.URL.Path)
+		c.FileFromFS("/sell-copilot/dist/template.html", http.FS(frontend))
+	})
+
+	err = database.InitDB()
+	if err != nil {
+		log.Fatal("Error database.InitDB")
+	}
+
+	// r.Use(func(c *gin.Context) {
+	// 	session := sessions.Default(c)
+	// 	session.Set("count", 1)
+	// 	session.Save()
+	// 	c.Next()
+	// })
+
 	r.Use(func(c *gin.Context) {
-		session := sessions.Default(c)
-		session.Set("count", 1)
-		session.Save()
-		c.Next()
+		log.Println("middleware 111")
+	})
+	r.Use(func(c *gin.Context) {
+		log.Println("middleware 222")
 	})
 
 	routes.InitRoutes(r)
-	r.Run(":8080")
-}
-
-func test2() {
-	r := gin.Default()
-	store := cookie.NewStore([]byte("secret"))
-	r.Use(sessions.Sessions("mysession", store))
-
-	r.GET("/incr", func(c *gin.Context) {
-		session := sessions.Default(c)
-		var count int
-		v := session.Get("count")
-		if v == nil {
-			count = 0
-		} else {
-			count = v.(int)
-			count += 1
-		}
-		session.Set("count", count)
-		session.Save()
-		c.JSON(200, gin.H{"count": count})
-	})
-	r.Run(":8080")
-}
-
-func test() {
-	fmt.Println("Hello, World!")
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	fmt.Println("TOKEN", os.Getenv("TOKEN"))
-
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run(os.Getenv("LISTEN_ADDR"))
 }
