@@ -36,7 +36,7 @@ func (c *LoginController) GetUserInfo(ctx *gin.Context) {
 	login, ok := session.Get("login").(int)
 	if !ok || login != 1 {
 		// log.Println("/api/userinfo", "no login")
-		ctx.JSON(200, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "no login",
 		})
@@ -49,7 +49,7 @@ func (c *LoginController) GetUserInfo(ctx *gin.Context) {
 	if err != nil {
 		log.Println("/api/userinfo Unmarshal fail", err)
 	}
-	ctx.JSON(200, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 		"user":    user,
@@ -64,7 +64,8 @@ type loginForm struct {
 func (c *LoginController) Login(ctx *gin.Context) {
 	var form loginForm
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
+			"code":    1,
 			"message": "invalid form",
 		})
 		return
@@ -72,14 +73,14 @@ func (c *LoginController) Login(ctx *gin.Context) {
 	var user database.User
 	result := database.Db.Where(&database.User{Username: form.Username, Password: form.Password}).First(&user)
 	if result.Error != nil {
-		ctx.JSON(200, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": result.Error.Error(),
 		})
 		return
 	}
 	if result.RowsAffected == 0 {
-		ctx.JSON(200, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "user not found",
 		})
@@ -97,14 +98,14 @@ func (c *LoginController) Login(ctx *gin.Context) {
 	}
 
 	if err := session.Save(); err != nil {
-		ctx.JSON(200, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 		"user":    user,
@@ -116,14 +117,14 @@ func (c *LoginController) Logout(ctx *gin.Context) {
 	session.Clear()
 
 	if err := session.Save(); err != nil {
-		ctx.JSON(200, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(200, gin.H{
+	ctx.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 	})

@@ -1,9 +1,7 @@
 package database
 
-import "gorm.io/gorm"
-
 type Goods struct {
-	gorm.Model
+	BaseModel
 	Title         string `json:"title"`
 	Description   string `json:"description"`
 	Thumbnail     string `json:"thumbnail"`
