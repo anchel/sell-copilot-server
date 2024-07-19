@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -15,7 +14,7 @@ func init() {
 		ctl := NewGoodsController()
 		r.GET("/goods/list", ctl.List)
 		r.POST("/goods/add", ctl.Add)
-		r.POST("/goods/:id", ctl.Edit)
+		r.POST("/goods/:goodsId", ctl.Edit)
 		r.POST("/goods/del", ctl.Del)
 	})
 }
@@ -38,13 +37,9 @@ type listForm struct {
 func (ctl *GoodsController) List(c *gin.Context) {
 	var form listForm
 	if err := c.ShouldBindQuery(&form); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "invalid form: " + err.Error(),
-		})
+		ctl.returnFail(c, 1, "invalid form: "+err.Error())
 		return
 	}
-	log.Println("/api/goods/list form", form)
 
 	if form.Offset < 0 || form.Offset > 100000000 {
 		form.Offset = 0
@@ -52,15 +47,11 @@ func (ctl *GoodsController) List(c *gin.Context) {
 	if form.Limit <= 0 || form.Limit > 1000 {
 		form.Limit = 20
 	}
-	log.Println("/api/goods/list form", form)
 
 	var goods []database.Goods
 	result := database.Db.Limit(int(form.Limit)).Offset(int(form.Offset)).Find(&goods)
 	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
+		ctl.returnFail(c, 1, result.Error.Error())
 		return
 	}
 
@@ -84,10 +75,7 @@ type addForm struct {
 func (ctl *GoodsController) Add(c *gin.Context) {
 	var form addForm
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "invalid form: " + err.Error(),
-		})
+		ctl.returnFail(c, 1, "invalid form: "+err.Error())
 		return
 	}
 	goods := database.Goods{
@@ -98,25 +86,14 @@ func (ctl *GoodsController) Add(c *gin.Context) {
 
 	result := database.Db.Create(&goods)
 	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
+		ctl.returnFail(c, 1, result.Error.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
-		"goods": map[string]any{
-			"id":              goods.ID,
-			"title":           goods.Title,
-			"description":     goods.Description,
-			"thumbnail":       goods.Thumbnail,
-			"goods_sku_total": goods.GoodsSkuTotal,
-			"created_at":      goods.CreatedAt,
-			"updated_at":      goods.UpdatedAt,
-		},
+		"goods":   goods,
 	})
 }
 
@@ -132,65 +109,34 @@ type editForm struct {
 }
 
 func (ctl *GoodsController) Edit(c *gin.Context) {
-	idstr := c.Param("id")
-	id, err := strconv.Atoi(idstr)
+	idstr := c.Param("goodsId")
+	gid, err := strconv.Atoi(idstr)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "id invalid",
-		})
+		ctl.returnFail(c, 1, "goodsId invalid")
 		return
 	}
 
 	var form editForm
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "invalid form: " + err.Error(),
-		})
+		ctl.returnFail(c, 1, "invalid form: "+err.Error())
 		return
 	}
 
-	log.Println("form", form)
+	goods, err := ctl.checkGoodsRecord(c, uint(gid))
+	if err != nil {
+		return
+	}
 
-	findGoods := &database.Goods{}
-	result := database.Db.Find(&findGoods, id)
+	result := database.Db.Model(&goods).Updates(form)
 	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
-		return
-	}
-	if result.RowsAffected <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "record not exists",
-		})
-		return
-	}
-
-	result = database.Db.Model(&findGoods).Updates(form)
-	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
+		ctl.returnFail(c, 1, result.Error.Error())
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
-		"goods": map[string]any{
-			"id":              findGoods.ID,
-			"title":           findGoods.Title,
-			"description":     findGoods.Description,
-			"thumbnail":       findGoods.Thumbnail,
-			"goods_sku_total": findGoods.GoodsSkuTotal,
-			"created_at":      findGoods.CreatedAt,
-			"updated_at":      findGoods.UpdatedAt,
-		},
+		"goods":   goods,
 	})
 }
 
@@ -205,49 +151,25 @@ type delForm struct {
 func (ctl *GoodsController) Del(c *gin.Context) {
 	var form delForm
 	if err := c.ShouldBindJSON(&form); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "invalid form: " + err.Error(),
-		})
+		ctl.returnFail(c, 1, "invalid form: "+err.Error())
 		return
 	}
 
-	result := database.Db.Find(&database.Goods{}, form.ID)
+	goods, err := ctl.checkGoodsRecord(c, form.ID) // 检查商品是否存在
+	if err != nil {
+		return
+	}
+
+	result := database.Db.Delete(&database.Goods{}, goods.ID)
 	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
+		ctl.returnFail(c, 1, result.Error.Error())
 		return
 	}
 
 	if result.RowsAffected <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "record not exists",
-		})
+		ctl.returnFail(c, 1, "record delete fail")
 		return
 	}
 
-	result = database.Db.Delete(&database.Goods{}, form.ID)
-	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": result.Error.Error(),
-		})
-		return
-	}
-
-	if result.RowsAffected <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "record delete fail",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    0,
-		"message": "ok",
-	})
+	ctl.returnOk(c)
 }
