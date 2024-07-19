@@ -125,9 +125,9 @@ func (ctl *GoodsController) Add(c *gin.Context) {
  *
  */
 type editForm struct {
-	Title         string  `json:"title" binding:"required"`
+	Title         *string `json:"title"`
 	Description   *string `json:"description"`
-	GoodsSkuTotal uint    `json:"goods_sku_total"`
+	GoodsSkuTotal *uint   `json:"goods_sku_total"`
 }
 
 func (ctl *GoodsController) Edit(c *gin.Context) {
@@ -150,6 +150,8 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 		return
 	}
 
+	log.Println("form", form)
+
 	findGoods := &database.Goods{}
 	result := database.Db.Find(&findGoods, id)
 	if result.Error != nil {
@@ -167,11 +169,7 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 		return
 	}
 
-	findGoods.Title = form.Title
-	findGoods.Description = form.Description
-	findGoods.GoodsSkuTotal = form.GoodsSkuTotal
-
-	result = database.Db.Save(&findGoods)
+	result = database.Db.Model(&findGoods).Updates(form)
 	if result.Error != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
