@@ -31,8 +31,6 @@ type ImageController struct {
 }
 
 type BindFile struct {
-	// Name  string                `form:"name" binding:"required"`
-	// Email string                `form:"email" binding:"required"`
 	File *multipart.FileHeader `form:"file" binding:"required"`
 }
 

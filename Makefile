@@ -19,7 +19,6 @@ linux-amd64:
 	GOARCH=amd64 GOOS=linux $(GOBUILD) -o $(BUILD_DIR)/$@/$(NAME)
 
 run:
-	rm -rf dist
 	mkdir -p dist
 	go build -o dist/sellcopilot main.go
 	cp .env dist

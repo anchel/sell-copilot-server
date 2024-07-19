@@ -57,13 +57,13 @@ func (ctl *LoginController) GetUserInfo(c *gin.Context) {
 }
 
 type loginForm struct {
-	Username string `form:"username" binding:"required"`
-	Password string `form:"password" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (ctl *LoginController) Login(c *gin.Context) {
 	var form loginForm
-	if err := c.ShouldBind(&form); err != nil {
+	if err := c.ShouldBindJSON(&form); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "invalid form",

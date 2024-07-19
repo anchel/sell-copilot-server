@@ -85,20 +85,20 @@ func run(configPath string) error {
 	group := r.Group("/api", func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		if lo.Contains(exclude, path) { // exclude
-			log.Println("check login path exclude", path)
+			// log.Println("check login path exclude", path)
 			ctx.Next()
 		} else {
 			session := sessions.Default(ctx)
 			login, ok := session.Get("login").(int)
 			if !ok || login != 1 {
-				log.Println("check login false")
-				ctx.JSON(200, gin.H{
+				// log.Println("check login false")
+				ctx.JSON(http.StatusForbidden, gin.H{
 					"code":    1,
 					"message": "no login",
 				})
 				ctx.Abort()
 			} else {
-				log.Println("check login success")
+				// log.Println("check login success")
 				ctx.Next()
 			}
 		}
