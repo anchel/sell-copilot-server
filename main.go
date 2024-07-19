@@ -16,26 +16,56 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/samber/lo"
+	"github.com/spf13/cobra"
 )
+
+var rootCmd = &cobra.Command{
+	Use:   "sellcopilot",
+	Short: "sell copilot",
+	Long:  "sell copilot, server and frontend",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) <= 0 {
+			fmt.Println("配置文件路径为空")
+			os.Exit(1)
+		}
+		err := run(args[0])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	},
+}
+
+func main() {
+	err := rootCmd.Execute()
+	if err != nil {
+		os.Exit(1)
+	}
+}
 
 //go:embed sell-copilot/dist
 var frontend embed.FS
 
-func main() {
+func run(configPath string) error {
+	fmt.Println("configPath", configPath)
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file")
+		return err
 	}
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 
 	store, err := redis.NewStore(3, "tcp", os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWORD"), []byte("secret666"))
 	if err != nil {
-		log.Fatal("Error redis.NewStore")
+		log.Println("Error redis.NewStore")
+		return err
 	}
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.Use(static.Serve("/", static.EmbedFolder(frontend, "sell-copilot/dist")))
+	r.Static("/upload-image", "./image")
+
 	// enable single page application
 	r.NoRoute(func(c *gin.Context) {
 		fmt.Println("NoRoute", c.Request.URL.Path)
@@ -44,7 +74,8 @@ func main() {
 
 	err = database.InitDB()
 	if err != nil {
-		log.Fatal("Error database.InitDB")
+		log.Println("Error database.InitDB")
+		return err
 	}
 
 	exclude := []string{
@@ -73,5 +104,5 @@ func main() {
 		}
 	})
 	routes.InitRoutes(group)
-	r.Run(os.Getenv("LISTEN_ADDR"))
+	return r.Run(os.Getenv("LISTEN_ADDR"))
 }

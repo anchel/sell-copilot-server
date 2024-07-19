@@ -13,10 +13,10 @@ import (
 
 func init() {
 	routes.AddRouteInitFunc(func(r *gin.RouterGroup) {
-		loginController := NewLoginController()
-		r.POST("/login", loginController.Login)
-		r.GET("/logout", loginController.Logout)
-		r.GET("/userinfo", loginController.GetUserInfo)
+		ctl := NewLoginController()
+		r.POST("/login", ctl.Login)
+		r.GET("/logout", ctl.Logout)
+		r.GET("/userinfo", ctl.GetUserInfo)
 	})
 }
 
@@ -30,13 +30,13 @@ type LoginController struct {
 	*BaseController
 }
 
-func (c *LoginController) GetUserInfo(ctx *gin.Context) {
-	session := sessions.Default(ctx)
+func (ctl *LoginController) GetUserInfo(c *gin.Context) {
+	session := sessions.Default(c)
 	// log.Println("/api/userinfo", session.ID(), session.Get("login"))
 	login, ok := session.Get("login").(int)
 	if !ok || login != 1 {
 		// log.Println("/api/userinfo", "no login")
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "no login",
 		})
@@ -49,7 +49,7 @@ func (c *LoginController) GetUserInfo(ctx *gin.Context) {
 	if err != nil {
 		log.Println("/api/userinfo Unmarshal fail", err)
 	}
-	ctx.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 		"user":    user,
@@ -57,14 +57,14 @@ func (c *LoginController) GetUserInfo(ctx *gin.Context) {
 }
 
 type loginForm struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `form:"username" binding:"required"`
+	Password string `form:"password" binding:"required"`
 }
 
-func (c *LoginController) Login(ctx *gin.Context) {
+func (ctl *LoginController) Login(c *gin.Context) {
 	var form loginForm
-	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "invalid form",
 		})
@@ -73,21 +73,21 @@ func (c *LoginController) Login(ctx *gin.Context) {
 	var user database.User
 	result := database.Db.Where(&database.User{Username: form.Username, Password: form.Password}).First(&user)
 	if result.Error != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": result.Error.Error(),
 		})
 		return
 	}
 	if result.RowsAffected == 0 {
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "user not found",
 		})
 		return
 	}
 
-	session := sessions.Default(ctx)
+	session := sessions.Default(c)
 	session.Set("login", 1)
 	userBS, err := json.Marshal(user)
 	if err == nil {
@@ -98,33 +98,33 @@ func (c *LoginController) Login(ctx *gin.Context) {
 	}
 
 	if err := session.Save(); err != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 		"user":    user,
 	})
 }
 
-func (c *LoginController) Logout(ctx *gin.Context) {
-	session := sessions.Default(ctx)
+func (ctl *LoginController) Logout(c *gin.Context) {
+	session := sessions.Default(c)
 	session.Clear()
 
 	if err := session.Save(); err != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
 	})

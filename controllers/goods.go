@@ -11,10 +11,10 @@ import (
 
 func init() {
 	routes.AddRouteInitFunc(func(r *gin.RouterGroup) {
-		goodsController := NewGoodsController()
-		r.GET("/goods/list", goodsController.List)
-		r.POST("/goods/add", goodsController.Add)
-		r.POST("/goods/del", goodsController.Del)
+		ctl := NewGoodsController()
+		r.GET("/goods/list", ctl.List)
+		r.POST("/goods/add", ctl.Add)
+		r.POST("/goods/del", ctl.Del)
 	})
 }
 
@@ -33,10 +33,10 @@ type listForm struct {
 	Limit  int32 `form:"limit"`
 }
 
-func (c *GoodsController) List(ctx *gin.Context) {
+func (ctl *GoodsController) List(c *gin.Context) {
 	var form listForm
-	if err := ctx.ShouldBindQuery(&form); err != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+	if err := c.ShouldBindQuery(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "invalid form: " + err.Error(),
 		})
@@ -55,29 +55,29 @@ func (c *GoodsController) List(ctx *gin.Context) {
 	var goods []database.Goods
 	result := database.Db.Limit(int(form.Limit)).Offset(int(form.Offset)).Find(&goods)
 	if result.Error != nil {
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": result.Error.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "list",
 		"list":    goods,
 	})
 }
 
-func (c *GoodsController) Add(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{
+func (ctl *GoodsController) Add(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "add",
 	})
 }
 
-func (c *GoodsController) Del(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{
+func (ctl *GoodsController) Del(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "del",
 	})
