@@ -122,7 +122,8 @@ func (ctl *GoodsController) Add(c *gin.Context) {
 
 /**
  * modify a goods record
- *
+ * 因为编辑的时候，提交的各个字段都允许为空，当为空时表示不改变当前字段的值。所以下面的editform每个字段都用指针，当指针等于nil时，表示前端没有传，那么就不改变当前值
+ * 但是这样会不会有一个问题，如果就是想要某个数据库字段变为null呢？
  */
 type editForm struct {
 	Title         *string `json:"title"`
