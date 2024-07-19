@@ -58,7 +58,7 @@ func (ctl *GoodsSkuController) List(c *gin.Context) {
 		return
 	}
 
-	goods, err := ctl.checkGoodsRecord(c, uint(gid))
+	goods, err := ctl.checkGoods(c, uint(gid))
 	if err != nil {
 		return
 	}
@@ -99,7 +99,7 @@ func (ctl *GoodsSkuController) Add(c *gin.Context) {
 		return
 	}
 
-	goods, err := ctl.checkGoodsRecord(c, gid)
+	goods, err := ctl.checkGoods(c, gid)
 	if err != nil {
 		return
 	}

@@ -48,8 +48,8 @@ func (ctl *GoodsController) List(c *gin.Context) {
 		form.Limit = 20
 	}
 
-	var goods []database.Goods
-	result := database.Db.Limit(int(form.Limit)).Offset(int(form.Offset)).Find(&goods)
+	var goodsList []database.Goods
+	result := database.Db.Limit(int(form.Limit)).Offset(int(form.Offset)).Find(&goodsList)
 	if result.Error != nil {
 		ctl.returnFail(c, 1, result.Error.Error())
 		return
@@ -58,7 +58,7 @@ func (ctl *GoodsController) List(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "ok",
-		"list":    goods,
+		"list":    goodsList,
 	})
 }
 
@@ -122,7 +122,7 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 		return
 	}
 
-	goods, err := ctl.checkGoodsRecord(c, uint(gid))
+	goods, err := ctl.checkGoods(c, uint(gid))
 	if err != nil {
 		return
 	}
@@ -155,7 +155,7 @@ func (ctl *GoodsController) Del(c *gin.Context) {
 		return
 	}
 
-	goods, err := ctl.checkGoodsRecord(c, form.ID) // 检查商品是否存在
+	goods, err := ctl.checkGoods(c, form.ID) // 检查商品是否存在
 	if err != nil {
 		return
 	}

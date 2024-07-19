@@ -25,7 +25,7 @@ func (ctl *BaseController) returnFail(c *gin.Context, code int, msg string) {
 	})
 }
 
-func (ctl *BaseController) checkGoodsRecord(c *gin.Context, goodsId uint) (*database.Goods, error) {
+func (ctl *BaseController) checkGoods(c *gin.Context, goodsId uint) (*database.Goods, error) {
 	goods := database.Goods{}
 	result := database.Db.Find(&goods, goodsId)
 	if result.Error != nil {
