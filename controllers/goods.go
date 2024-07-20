@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/anchel/sell-copilot-server/database"
 	"github.com/anchel/sell-copilot-server/routes"
@@ -109,10 +108,8 @@ type editForm struct {
 }
 
 func (ctl *GoodsController) Edit(c *gin.Context) {
-	idstr := c.Param("goodsId")
-	gid, err := strconv.Atoi(idstr)
+	gid, err := ctl.getParamGoodsId(c)
 	if err != nil {
-		ctl.returnFail(c, 1, "goodsId invalid")
 		return
 	}
 
@@ -122,7 +119,7 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 		return
 	}
 
-	goods, err := ctl.checkGoods(c, uint(gid))
+	goods, err := ctl.checkGoods(c, gid)
 	if err != nil {
 		return
 	}

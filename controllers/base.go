@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/anchel/sell-copilot-server/database"
 	"github.com/gin-gonic/gin"
@@ -66,4 +67,26 @@ func (ctl *BaseController) checkGoodsSku(c *gin.Context, goodsId uint, skuId uin
 	}
 
 	return &sku, nil
+}
+
+func (ctl *BaseController) getParamGoodsId(c *gin.Context) (uint, error) {
+	gidstr := c.Param("goodsId")
+	gid, err := strconv.Atoi(gidstr)
+	if err != nil {
+		ctl.returnFail(c, 1, "goodsId invalid")
+		return 0, err
+	}
+
+	return uint(gid), nil
+}
+
+func (ctl *BaseController) getParamId(c *gin.Context) (uint, error) {
+	idstr := c.Param("id")
+	id, err := strconv.Atoi(idstr)
+	if err != nil {
+		ctl.returnFail(c, 1, "id invalid")
+		return 0, err
+	}
+
+	return uint(id), nil
 }

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/anchel/sell-copilot-server/database"
 	"github.com/anchel/sell-copilot-server/routes"
@@ -27,28 +26,6 @@ func NewGoodsSkuController() *GoodsSkuController {
 
 type GoodsSkuController struct {
 	*BaseController
-}
-
-func (ctl *GoodsSkuController) getParamGoodsId(c *gin.Context) (uint, error) {
-	gidstr := c.Param("goodsId")
-	gid, err := strconv.Atoi(gidstr)
-	if err != nil {
-		ctl.returnFail(c, 1, "goodsId invalid")
-		return 0, err
-	}
-
-	return uint(gid), nil
-}
-
-func (ctl *GoodsSkuController) getParamId(c *gin.Context) (uint, error) {
-	idstr := c.Param("id")
-	id, err := strconv.Atoi(idstr)
-	if err != nil {
-		ctl.returnFail(c, 1, "id invalid")
-		return 0, err
-	}
-
-	return uint(id), nil
 }
 
 // 查询列表
