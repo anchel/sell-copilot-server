@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/anchel/sell-copilot-server/database"
@@ -124,7 +125,11 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 		return
 	}
 
-	result := database.Db.Model(&goods).Updates(form)
+	formStr, _ := json.Marshal(&form)
+	var updateForm database.Goods
+	json.Unmarshal(formStr, &updateForm)
+
+	result := database.Db.Model(goods).Updates(updateForm)
 	if result.Error != nil {
 		ctl.returnFail(c, 1, result.Error.Error())
 		return

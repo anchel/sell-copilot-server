@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/anchel/sell-copilot-server/database"
@@ -60,8 +61,8 @@ type addSkuForm struct {
 	Description *string `json:"description"`
 	Imgurl      *string `json:"imgurl"`
 	Thumbnail   *string `json:"thumbnail"`
-	Total       int     `json:"num_total"`
-	Remain      int     `json:"num_remain"`
+	Total       *uint   `json:"num_total"`
+	Remain      *uint   `json:"num_remain"`
 }
 
 func (ctl *GoodsSkuController) Add(c *gin.Context) {
@@ -110,8 +111,8 @@ type editSkuForm struct {
 	Description *string `json:"description"`
 	Imgurl      *string `json:"imgurl"`
 	Thumbnail   *string `json:"thumbnail"`
-	Total       *int    `json:"num_total"`
-	Remain      *int    `json:"num_remain"`
+	Total       *uint   `json:"num_total"`
+	Remain      *uint   `json:"num_remain"`
 }
 
 func (ctl *GoodsSkuController) Edit(c *gin.Context) {
@@ -138,7 +139,14 @@ func (ctl *GoodsSkuController) Edit(c *gin.Context) {
 	}
 
 	// 执行修改
-	result := database.Db.Model(&sku).Updates(form)
+	// modelGoodsSku := &database.GoodsSku{}
+	// modelGoodsSku.ID = sku.ID
+
+	formStr, _ := json.Marshal(&form)
+	var updateForm database.GoodsSku
+	json.Unmarshal(formStr, &updateForm)
+
+	result := database.Db.Model(sku).Updates(updateForm)
 	if result.Error != nil {
 		ctl.returnFail(c, 1, result.Error.Error())
 		return
