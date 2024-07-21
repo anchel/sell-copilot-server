@@ -127,7 +127,11 @@ func (ctl *GoodsController) Edit(c *gin.Context) {
 
 	formStr, _ := json.Marshal(&form)
 	var updateForm database.Goods
-	json.Unmarshal(formStr, &updateForm)
+	err = json.Unmarshal(formStr, &updateForm)
+	if err != nil {
+		ctl.returnFail(c, 1, "json unmarshal fail: "+err.Error())
+		return
+	}
 
 	result := database.Db.Model(goods).Updates(updateForm)
 	if result.Error != nil {
