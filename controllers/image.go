@@ -74,6 +74,6 @@ func (ctl *ImageController) Upload(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":      0,
 		"message":   "ok",
-		"imagePath": filepath.Join(os.Getenv("SERVE_HOST"), "/upload-image", filename),
+		"imagePath": filepath.Join("/upload-image", filename),
 	})
 }
