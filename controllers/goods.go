@@ -8,7 +8,6 @@ import (
 	"github.com/samber/lo"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -256,7 +255,7 @@ func (ctl *GoodsController) mergeImage(c *gin.Context) {
 	}
 
 	// 更新数据库记录
-	result = database.Db.Model(goods).Updates(map[string]interface{}{"thumbnail": filepath.Join("upload-image", filename)})
+	result = database.Db.Model(goods).Updates(map[string]interface{}{"thumbnail": filepath.Join("/upload-image", filename)})
 	if result.Error != nil {
 		ctl.returnFail(c, 1, result.Error.Error())
 		return
@@ -265,6 +264,6 @@ func (ctl *GoodsController) mergeImage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":      0,
 		"message":   "ok",
-		"imagePath": filepath.Join(os.Getenv("SERVE_HOST"), "/upload-image", filename),
+		"imagePath": filepath.Join("/upload-image", filename),
 	})
 }
