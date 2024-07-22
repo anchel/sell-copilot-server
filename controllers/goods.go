@@ -2,7 +2,15 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/anchel/sell-copilot-server/lib/image"
+	"github.com/anchel/sell-copilot-server/lib/util"
+	"github.com/samber/lo"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/anchel/sell-copilot-server/database"
 	"github.com/anchel/sell-copilot-server/routes"
@@ -16,6 +24,7 @@ func init() {
 		r.POST("/goods/add", ctl.Add)
 		r.POST("/goods/:goodsId", ctl.Edit)
 		r.POST("/goods/del", ctl.Del)
+		r.POST("/goods/merge-image", ctl.mergeImage)
 	})
 }
 
@@ -178,4 +187,84 @@ func (ctl *GoodsController) Del(c *gin.Context) {
 	}
 
 	ctl.returnOk(c)
+}
+
+type mergeImageForm struct {
+	ID uint `json:"id" binding:"required"`
+}
+
+func (ctl *GoodsController) mergeImage(c *gin.Context) {
+	var form mergeImageForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		ctl.returnFail(c, 1, "invalid form: "+err.Error())
+		return
+	}
+
+	exePwd, err := util.GetExePwd()
+	if err != nil {
+		log.Println(err)
+		ctl.returnFail(c, 1, err.Error())
+		return
+	}
+
+	goods, err := ctl.checkGoods(c, form.ID) // 检查商品是否存在
+	if err != nil {
+		return
+	}
+
+	var skuList []database.GoodsSku
+	result := database.Db.Limit(1000).Offset(0).Where("goods_id", goods.ID).Find(&skuList)
+	if result.Error != nil {
+		ctl.returnFail(c, 1, result.Error.Error())
+		return
+	}
+
+	pathList := lo.Map(skuList, func(sku database.GoodsSku, index int) string {
+		return filepath.Join(exePwd, *sku.Imgurl)
+	})
+
+	log.Println("pathList", pathList)
+
+	is, err := image.NewList(pathList)
+	if err != nil {
+		log.Println("merge image:", err)
+		ctl.returnFail(c, 1, err.Error())
+		return
+	}
+
+	dx := 3
+	if len(pathList) > 12 {
+		dx = 4
+	}
+	img, err := is.ApplyGridLayout(dx, 100)
+	if err != nil {
+		log.Println(err)
+		ctl.returnFail(c, 1, err.Error())
+		return
+	}
+
+	t := time.Now()
+	filename := fmt.Sprintf("upload-%d%s", t.UnixMicro(), ".jpg")
+	dstFilePath := filepath.Join(exePwd, "upload-image", filename)
+
+	// 保存图片
+	err = image.Save(img, dstFilePath)
+	if err != nil {
+		log.Println(err)
+		ctl.returnFail(c, 1, err.Error())
+		return
+	}
+
+	// 更新数据库记录
+	result = database.Db.Model(goods).Updates(map[string]interface{}{"thumbnail": filepath.Join("upload-image", filename)})
+	if result.Error != nil {
+		ctl.returnFail(c, 1, result.Error.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":      0,
+		"message":   "ok",
+		"imagePath": filepath.Join(os.Getenv("SERVE_HOST"), "/upload-image", filename),
+	})
 }

@@ -60,7 +60,7 @@ func (ctl *ImageController) Upload(c *gin.Context) {
 		return
 	}
 	wd := filepath.Dir(exePath)
-	dstFilePath := filepath.Join(wd, "image", filename)
+	dstFilePath := filepath.Join(wd, "upload-image", filename)
 	log.Println("upload filepath", dstFilePath)
 
 	if err := c.SaveUploadedFile(file, dstFilePath); err != nil {

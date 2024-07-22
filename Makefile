@@ -18,6 +18,9 @@ linux-amd64:
 	mkdir -p $(BUILD_DIR)/$@
 	GOARCH=amd64 GOOS=linux $(GOBUILD) -o $(BUILD_DIR)/$@/$(NAME)
 
+test:
+	go test -v ./...
+
 run:
 	mkdir -p dist
 	go build -o dist/sellcopilot main.go

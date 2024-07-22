@@ -54,7 +54,11 @@ func run(configPath string) error {
 		return err
 	}
 	r := gin.Default()
-	r.SetTrustedProxies(nil)
+	err = r.SetTrustedProxies(nil)
+	if err != nil {
+		log.Println("Error r.SetTrustedProxies")
+		return err
+	}
 
 	store, err := redis.NewStore(3, "tcp", os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASSWORD"), []byte("secret666"))
 	if err != nil {
@@ -64,7 +68,7 @@ func run(configPath string) error {
 	r.Use(sessions.Sessions("mysession", store))
 
 	r.Use(static.Serve("/", static.EmbedFolder(frontend, "sell-copilot/dist")))
-	r.Static("/upload-image", "./image")
+	r.Static("/upload-image", "./upload-image")
 
 	// enable single page application
 	r.NoRoute(func(c *gin.Context) {
